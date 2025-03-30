@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { useFrame, useThree } from '@react-three/fiber';
+import { useFrame, useThree, ThreeEvent } from '@react-three/fiber';
 import { PlanetProps } from '../types/types';
 import { Sphere, Ring, Html, useTexture } from '@react-three/drei';
 import * as THREE from 'three';
@@ -7,7 +7,7 @@ import * as THREE from 'three';
 // Types for the Moon component props
 interface EarthMoonProps {
   isEarthSelected: boolean;
-  onMoonClick: (e: React.MouseEvent) => void;
+  onMoonClick: (e: ThreeEvent<MouseEvent>) => void;
 }
 
 // Component for Earth's Moon
@@ -179,7 +179,7 @@ const Planet: React.FC<PlanetPropsWithMoon> = ({ data, isSelected, onClick, onMo
   const orbitGeometry = new THREE.BufferGeometry().setFromPoints(orbitPoints);
   
   // Function to handle moon click
-  const handleMoonClick = (e: React.MouseEvent) => {
+  const handleMoonClick = (e: ThreeEvent<MouseEvent>) => {
     e.stopPropagation();
     // Pass the moon click to parent if callback is provided
     if (onMoonClick) {

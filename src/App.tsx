@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Canvas } from '@react-three/fiber';
 import './App.css';
 import FixedSpaceScene from './components/FixedSpaceScene';
