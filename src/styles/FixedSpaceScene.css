@@ -1,0 +1,11 @@
+/* FixedSpaceScene.css */
+.scene-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.planet-hover {
+  cursor: pointer !important;
+} 
