@@ -2,9 +2,9 @@ import { useState, useEffect, useRef } from 'react';
 import { Canvas } from '@react-three/fiber';
 import './App.css';
 import FixedSpaceScene from './components/FixedSpaceScene';
-// PlanetInfo import removed due to error
-import { PlanetData } from './types/types';
+import { PlanetData, OrbitControlsSettings, OrbitSpeedMode, ViewPerspective } from './types/types';
 import PlanetInfo from './components/PlanetInfo';
+import ControlPanel from './components/ControlPanel';
 
 function App() {
   const [selectedPlanet, setSelectedPlanet] = useState<PlanetData | null>(null);
@@ -12,7 +12,16 @@ function App() {
   const [showHelp, setShowHelp] = useState(false);
   const [cursorPosition, setCursorPosition] = useState({ x: 0, y: 0 });
   const [showCustomCursor, setShowCustomCursor] = useState(false);
+  // Add state for camera transitions
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  
   const canvasRef = useRef<HTMLDivElement>(null);
+  
+  // Add state for orbit controls settings
+  const [orbitControlsSettings, setOrbitControlsSettings] = useState<OrbitControlsSettings>({
+    speedMode: OrbitSpeedMode.REALTIME,
+    viewPerspective: ViewPerspective.FREE
+  });
 
   // Simulate loading
   useEffect(() => {
@@ -55,6 +64,22 @@ function App() {
     };
   }, []);
 
+  // Handle orbit control settings change
+  const handleOrbitControlsChange = (newSettings: OrbitControlsSettings) => {
+    setOrbitControlsSettings(newSettings);
+  };
+  
+  // Handle planet selection with transition effect
+  const handlePlanetSelect = (planet: PlanetData | null) => {
+    setSelectedPlanet(planet);
+    
+    // Trigger transition animation
+    setIsTransitioning(true);
+    setTimeout(() => {
+      setIsTransitioning(false);
+    }, 1500); // Match the animation duration in FixedSpaceScene
+  };
+
   if (loading) {
     return (
       <div className="loading-screen">
@@ -70,17 +95,26 @@ function App() {
         style={{ width: '100vw', height: '100vh', background: '#000' }}
         camera={{ position: [0, 0, 50], fov: 60 }}
       >
-        <FixedSpaceScene onPlanetSelect={setSelectedPlanet} />
+        <FixedSpaceScene 
+          onPlanetSelect={handlePlanetSelect} 
+          orbitControlsSettings={orbitControlsSettings}
+        />
       </Canvas>
       
       {/* Planet information */}
       {selectedPlanet && (
         <PlanetInfo
           planet={selectedPlanet}
-          onClose={() => setSelectedPlanet(null)}
+          onClose={() => handlePlanetSelect(null)}
           textureUrl={selectedPlanet.textureUrl}
         />
       )}
+      
+      {/* Control panel */}
+      <ControlPanel 
+        settings={orbitControlsSettings}
+        onSettingsChange={handleOrbitControlsChange}
+      />
       
       <div className="app-title">Planetarium</div>
       
@@ -92,6 +126,11 @@ function App() {
       <div className="help-button" onClick={() => setShowHelp(!showHelp)}>
         ?
       </div>
+      
+      {/* Camera transition effects */}
+      <div className={`camera-transition-overlay ${isTransitioning ? 'active' : ''}`}></div>
+      <div className={`motion-blur ${isTransitioning ? 'active' : ''}`}></div>
+      <div className={`zoom-lines ${isTransitioning ? 'active' : ''}`}></div>
       
       {/* Custom cursor for planet hover */}
       {showCustomCursor && (
@@ -136,6 +175,7 @@ function App() {
                 <li><span className="sw-fact-number">[2]</span> Use scroll wheel to adjust viewing distance</li>
                 <li><span className="sw-fact-number">[3]</span> Click on any planet to access planetary database</li>
                 <li><span className="sw-fact-number">[4]</span> Use "Return to Navigation" to exit planet view</li>
+                <li><span className="sw-fact-number">[5]</span> Use the Control Panel to adjust orbit speed and view perspective</li>
               </ul>
             </div>
             

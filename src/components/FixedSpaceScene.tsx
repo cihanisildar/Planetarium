@@ -1,13 +1,16 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { OrbitControls, Stars, PerspectiveCamera } from '@react-three/drei';
-import { PlanetData } from '../types/types';
+import { useFrame } from '@react-three/fiber';
+import { PlanetData, OrbitControlsSettings, ViewPerspective } from '../types/types';
 import Planet from './Planet';
 import SimpleSun from './SimpleSun';
 import '../styles/FixedSpaceScene.css';
+import * as THREE from 'three';
 
 // Interface for the component props
 interface FixedSpaceSceneProps {
   onPlanetSelect: (planet: PlanetData | null) => void;
+  orbitControlsSettings: OrbitControlsSettings;
 }
 
 // Moon data for details panel
@@ -319,11 +322,48 @@ export const planetsData: PlanetData[] = [
   }
 ];
 
-const FixedSpaceScene: React.FC<FixedSpaceSceneProps> = ({ onPlanetSelect }) => {
+const FixedSpaceScene: React.FC<FixedSpaceSceneProps> = ({ 
+  onPlanetSelect, 
+  orbitControlsSettings 
+}) => {
   const [selectedPlanet, setSelectedPlanet] = useState<string | null>(null);
   const [cameraPosition, setCameraPosition] = useState<[number, number, number]>([0, 15, 35]);
   const [cameraTarget, setCameraTarget] = useState<[number, number, number]>([0, 0, 0]);
+  // Add animation states
+  const [isAnimating, setIsAnimating] = useState(false);
+  const [targetCameraPosition, setTargetCameraPosition] = useState<[number, number, number]>([0, 15, 35]);
+  const [targetCameraLookAt, setTargetCameraLookAt] = useState<[number, number, number]>([0, 0, 0]);
+  const [animationStartTime, setAnimationStartTime] = useState(Date.now() / 1000); // Initialize with current time
+  const animationDuration = 1.5; // Reduced duration for quicker transitions (was 2.5)
+  // Add state to track control stability - starts disabled to give camera time to settle
+  const [controlsEnabled, setControlsEnabled] = useState(false);
+  
+  // Use a ref to track if the component has mounted
+  const hasMounted = useRef(false);
+  
   const controlsRef = useRef<any>(null);
+  const cameraRef = useRef<any>(null);
+  const planetRefs = useRef<{[key: string]: THREE.Group | null}>({});
+  
+  // Set hasMounted ref on initial render
+  useEffect(() => {
+    hasMounted.current = true;
+    
+    // Add a small delay before enabling controls on mount to ensure proper initialization
+    setTimeout(() => {
+      if (controlsRef.current) {
+        controlsRef.current.update();
+      }
+    }, 300);
+  }, []);
+  
+  // Get the current speed multiplier from settings
+  const orbitSpeedMultiplier = orbitControlsSettings.speedMode;
+
+  // Register planet ref
+  const registerPlanetRef = (id: string, ref: THREE.Group | null) => {
+    planetRefs.current[id] = ref;
+  };
 
   // Function to handle planet selection
   const handleSelectPlanet = (id: string) => {
@@ -340,16 +380,20 @@ const FixedSpaceScene: React.FC<FixedSpaceSceneProps> = ({ onPlanetSelect }) => 
           // Calculate Earth's position in its orbit
           const earthOrbitRadius = Math.sqrt(earthPos[0] ** 2 + earthPos[1] ** 2 + earthPos[2] ** 2);
           // Set camera to look at Earth + Moon position
-          setCameraPosition([earthOrbitRadius + 3, 2, 0.5]);
-          setCameraTarget([earthOrbitRadius, 0, 0]);
+          setTargetCameraPosition([earthOrbitRadius + 3, 2, 0.5]);
+          setTargetCameraLookAt([earthOrbitRadius, 0, 0]);
         }
       } else {
         // For regular planets, calculate the orbit radius and set the camera accordingly
         const orbitRadius = Math.sqrt(planet.position[0] ** 2 + planet.position[1] ** 2 + planet.position[2] ** 2);
         const distance = planet.radius * (planet.id === 'sun' ? 12 : 8);
-        setCameraPosition([orbitRadius + distance, 3, 0.5]);
-        setCameraTarget([orbitRadius, 0, 0]);
+        setTargetCameraPosition([orbitRadius + distance, 3, 0.5]);
+        setTargetCameraLookAt([orbitRadius, 0, 0]);
       }
+      
+      // Start animation
+      setIsAnimating(true);
+      setAnimationStartTime(Date.now() / 1000); // Current time in seconds
       
       // Pass the selected planet data to the parent component
       if (id === 'sun') {
@@ -365,8 +409,13 @@ const FixedSpaceScene: React.FC<FixedSpaceSceneProps> = ({ onPlanetSelect }) => 
   // Handle selecting the Sun
   const handleSelectSun = () => {
     setSelectedPlanet('sun');
-    setCameraPosition([0, 3, 8]);
-    setCameraTarget([0, 0, 0]);
+    setTargetCameraPosition([0, 3, 8]);
+    setTargetCameraLookAt([0, 0, 0]);
+    
+    // Start animation
+    setIsAnimating(true);
+    setAnimationStartTime(Date.now() / 1000);
+    
     onPlanetSelect(sunData);
   };
 
@@ -381,9 +430,13 @@ const FixedSpaceScene: React.FC<FixedSpaceSceneProps> = ({ onPlanetSelect }) => 
       // Calculate Earth's position in its orbit
       const earthOrbitRadius = Math.sqrt(earthPos[0] ** 2 + earthPos[1] ** 2 + earthPos[2] ** 2);
       // Position camera to focus on the Moon near Earth
-      setCameraPosition([earthOrbitRadius + 2.5, 1, 0.5]);
-      setCameraTarget([earthOrbitRadius + 1.8, 0, 0]);
+      setTargetCameraPosition([earthOrbitRadius + 2.5, 1, 0.5]);
+      setTargetCameraLookAt([earthOrbitRadius + 1.8, 0, 0]);
     }
+    
+    // Start animation
+    setIsAnimating(true);
+    setAnimationStartTime(Date.now() / 1000);
     
     onPlanetSelect(moonData);
   };
@@ -391,24 +444,161 @@ const FixedSpaceScene: React.FC<FixedSpaceSceneProps> = ({ onPlanetSelect }) => 
   // Close the planet info panel
   const handleClosePlanetInfo = () => {
     setSelectedPlanet(null);
-    // Reset camera position to the default view
-    setCameraPosition([0, 15, 35]);
-    setCameraTarget([0, 0, 0]);
+    // Reset camera position to the default view with animation
+    setTargetCameraPosition([0, 15, 35]);
+    setTargetCameraLookAt([0, 0, 0]);
+    
+    // Start animation
+    setIsAnimating(true);
+    setAnimationStartTime(Date.now() / 1000);
+    
     onPlanetSelect(null);
   };
 
+  // Handle camera perspective changes
+  useEffect(() => {
+    // Don't change the camera if a planet is selected
+    if (selectedPlanet) return;
+    
+    // Handle perspective changes
+    switch(orbitControlsSettings.viewPerspective) {
+      case ViewPerspective.TOP_DOWN:
+        // Make top-down view with less angle for more stability
+        setTargetCameraPosition([0, 70, 0]); // Increased height for better overview
+        setTargetCameraLookAt([0, 0, 0]);
+        break;
+      case ViewPerspective.SIDE_VIEW:
+        // Adjust side view to a pure side perspective for stability
+        setTargetCameraPosition([60, 0, 0]);
+        setTargetCameraLookAt([0, 0, 0]);
+        break;
+      case ViewPerspective.FREE:
+      default:
+        // FREE view default position
+        setTargetCameraPosition([0, 15, 35]);
+        setTargetCameraLookAt([0, 0, 0]);
+        break;
+    }
+    
+    // Only animate if component has mounted (skip initial render)
+    if (hasMounted.current) {
+      setIsAnimating(true);
+      setAnimationStartTime(Date.now() / 1000);
+    }
+    
+    // Apply view-specific constraints immediately
+    if (controlsRef.current) {
+      switch(orbitControlsSettings.viewPerspective) {
+        case ViewPerspective.TOP_DOWN:
+          // Top-down view constraints - Modified for better top-down control
+          controlsRef.current.minPolarAngle = Math.PI / 3; // 60 degrees (slightly less restrictive)
+          controlsRef.current.maxPolarAngle = Math.PI / 2 + 0.1; // Slightly more than 90 degrees
+          controlsRef.current.minAzimuthAngle = -Infinity;
+          controlsRef.current.maxAzimuthAngle = Infinity;
+          break;
+        case ViewPerspective.SIDE_VIEW:
+          // Side view constraints
+          controlsRef.current.minPolarAngle = Math.PI / 6; // 30 degrees
+          controlsRef.current.maxPolarAngle = Math.PI - Math.PI / 6; // 150 degrees
+          controlsRef.current.minAzimuthAngle = -Infinity;
+          controlsRef.current.maxAzimuthAngle = Infinity;
+          break;
+        case ViewPerspective.FREE:
+        default:
+          // FREE view has no constraints
+          controlsRef.current.minPolarAngle = 0;
+          controlsRef.current.maxPolarAngle = Math.PI;
+          controlsRef.current.minAzimuthAngle = -Infinity;
+          controlsRef.current.maxAzimuthAngle = Infinity;
+          break;
+      }
+      
+      // Make sure controls are updated
+      controlsRef.current.update();
+    }
+  }, [orbitControlsSettings.viewPerspective, selectedPlanet]);
+
+  // Animate camera movement
+  useFrame(() => {
+    if (isAnimating) {
+      const currentTime = Date.now() / 1000;
+      const elapsedTime = currentTime - animationStartTime;
+      const progress = Math.min(elapsedTime / animationDuration, 1);
+      
+      // Use a simpler easing function for more predictable motion
+      const eased = progress; // Linear easing for more stable transitions
+      
+      // Interpolate between current position and target position
+      const newX = cameraPosition[0] + (targetCameraPosition[0] - cameraPosition[0]) * eased;
+      const newY = cameraPosition[1] + (targetCameraPosition[1] - cameraPosition[1]) * eased;
+      const newZ = cameraPosition[2] + (targetCameraPosition[2] - cameraPosition[2]) * eased;
+      
+      // Interpolate between current target and destination target
+      const newTargetX = cameraTarget[0] + (targetCameraLookAt[0] - cameraTarget[0]) * eased;
+      const newTargetY = cameraTarget[1] + (targetCameraLookAt[1] - cameraTarget[1]) * eased;
+      const newTargetZ = cameraTarget[2] + (targetCameraLookAt[2] - cameraTarget[2]) * eased;
+      
+      // Update camera position and target without shake
+      setCameraPosition([newX, newY, newZ]);
+      setCameraTarget([newTargetX, newTargetY, newTargetZ]);
+      
+      // Update controls target but keep them enabled during animation
+      if (controlsRef.current) {
+        controlsRef.current.target.set(newTargetX, newTargetY, newTargetZ);
+        controlsRef.current.update();
+      }
+      
+      // End animation when complete
+      if (progress >= 1) {
+        // Set final positions to ensure we're exactly at the target
+        setCameraPosition([...targetCameraPosition]);
+        setCameraTarget([...targetCameraLookAt]);
+        
+        // Apply view-specific constraints after animation completes
+        if (controlsRef.current) {
+          // Apply view-specific constraints based on the current perspective
+          switch (orbitControlsSettings.viewPerspective) {
+            case ViewPerspective.FREE:
+              // Reset all constraints for free view
+              controlsRef.current.minPolarAngle = 0;
+              controlsRef.current.maxPolarAngle = Math.PI;
+              controlsRef.current.minAzimuthAngle = -Infinity;
+              controlsRef.current.maxAzimuthAngle = Infinity;
+              break;
+            case ViewPerspective.TOP_DOWN:
+              // Apply top-down view constraints - Match the same values as above
+              controlsRef.current.minPolarAngle = Math.PI / 3; // 60 degrees (slightly less restrictive)
+              controlsRef.current.maxPolarAngle = Math.PI / 2 + 0.1; // Slightly more than 90 degrees
+              break;
+            case ViewPerspective.SIDE_VIEW:
+              // Apply side view constraints
+              controlsRef.current.minPolarAngle = Math.PI / 6; // 30 degrees
+              controlsRef.current.maxPolarAngle = Math.PI - Math.PI / 6; // 150 degrees
+              break;
+          }
+          
+          // Update the controls
+          controlsRef.current.update();
+        }
+        
+        // Finally set the animation state to false
+        setIsAnimating(false);
+      }
+    }
+  });
+
   // Update the camera controls whenever camera position or target changes
   useEffect(() => {
-    if (controlsRef.current) {
+    if (controlsRef.current && !isAnimating) {
       controlsRef.current.target.set(...cameraTarget);
       controlsRef.current.update();
     }
-  }, [cameraPosition, cameraTarget]);
+  }, [cameraPosition, cameraTarget, isAnimating]);
 
   return (
     <>
       {/* THREE.js content */}
-      <PerspectiveCamera makeDefault position={cameraPosition} fov={50} />
+      <PerspectiveCamera makeDefault position={cameraPosition} fov={50} ref={cameraRef} />
       
       {/* Controls for camera movement */}
       <OrbitControls
@@ -417,8 +607,25 @@ const FixedSpaceScene: React.FC<FixedSpaceSceneProps> = ({ onPlanetSelect }) => 
         dampingFactor={0.1}
         rotateSpeed={0.5}
         zoomSpeed={0.7}
+        panSpeed={0.5}
         minDistance={3}
         maxDistance={100}
+        enabled={true} // Always keep enabled
+        enableRotate={true}
+        enableZoom={true}
+        enablePan={orbitControlsSettings.viewPerspective === ViewPerspective.FREE}
+        // Use simpler button mappings
+        mouseButtons={{
+          LEFT: THREE.MOUSE.ROTATE,
+          MIDDLE: THREE.MOUSE.DOLLY,
+          RIGHT: orbitControlsSettings.viewPerspective === ViewPerspective.FREE ? THREE.MOUSE.PAN : THREE.MOUSE.ROTATE
+        }}
+        // Add additional settings for smoother control
+        touches={{
+          ONE: THREE.TOUCH.ROTATE,
+          TWO: THREE.TOUCH.DOLLY_PAN
+        }}
+        screenSpacePanning={true} // More intuitive panning
       />
       
       {/* Stars background */}
@@ -434,6 +641,8 @@ const FixedSpaceScene: React.FC<FixedSpaceSceneProps> = ({ onPlanetSelect }) => 
           position={[0, 0, 0]} 
           isSelected={selectedPlanet === 'sun'} 
           onClick={handleSelectSun} 
+          orbitSpeedMultiplier={orbitSpeedMultiplier}
+          ref={(ref) => registerPlanetRef('sun', ref)}
         />
       </group>
       
@@ -447,6 +656,8 @@ const FixedSpaceScene: React.FC<FixedSpaceSceneProps> = ({ onPlanetSelect }) => 
               isSelected={selectedPlanet === planet.id}
               onClick={() => handleSelectPlanet(planet.id)}
               onMoonClick={planet.id === 'earth' ? handleSelectMoon : undefined}
+              orbitSpeedMultiplier={orbitSpeedMultiplier}
+              ref={(ref) => registerPlanetRef(planet.id, ref)}
             />
           );
         }

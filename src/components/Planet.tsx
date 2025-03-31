@@ -8,10 +8,11 @@ import * as THREE from 'three';
 interface EarthMoonProps {
   isEarthSelected: boolean;
   onMoonClick: (e: ThreeEvent<MouseEvent>) => void;
+  orbitSpeedMultiplier: number;
 }
 
 // Component for Earth's Moon
-const EarthMoon: React.FC<EarthMoonProps> = ({ isEarthSelected, onMoonClick }) => {
+const EarthMoon: React.FC<EarthMoonProps> = ({ isEarthSelected, onMoonClick, orbitSpeedMultiplier }) => {
   const moonRef = useRef<THREE.Mesh>(null);
   const orbitRef = useRef<THREE.Group>(null);
   const [hovered, setHovered] = useState(false);
@@ -37,10 +38,10 @@ const EarthMoon: React.FC<EarthMoonProps> = ({ isEarthSelected, onMoonClick }) =
   // Animate moon orbit around Earth
   useFrame((_, delta) => {
     if (orbitRef.current) {
-      orbitRef.current.rotation.y += delta * 0.2; // Moon orbit speed
+      orbitRef.current.rotation.y += delta * 0.2 * orbitSpeedMultiplier; // Moon orbit speed
     }
     if (moonRef.current) {
-      moonRef.current.rotation.y += delta * 0.01; // Moon rotation speed
+      moonRef.current.rotation.y += delta * 0.01 * orbitSpeedMultiplier; // Moon rotation speed
     }
   });
   
@@ -89,9 +90,17 @@ const EarthMoon: React.FC<EarthMoonProps> = ({ isEarthSelected, onMoonClick }) =
 // Update the PlanetProps interface
 interface PlanetPropsWithMoon extends PlanetProps {
   onMoonClick?: () => void;
+  orbitSpeedMultiplier: number;
 }
 
-const Planet: React.FC<PlanetPropsWithMoon> = ({ data, isSelected, onClick, onMoonClick }) => {
+// Use forwardRef to pass refs to the component
+const Planet = React.forwardRef<THREE.Group, PlanetPropsWithMoon>(({ 
+  data, 
+  isSelected, 
+  onClick, 
+  onMoonClick, 
+  orbitSpeedMultiplier 
+}, ref) => {
   const { id, name, position, radius, color, rotation, orbitalSpeed, rotationSpeed, rings, textureUrl } = data;
   
   const planetRef = useRef<THREE.Mesh>(null);
@@ -102,6 +111,14 @@ const Planet: React.FC<PlanetPropsWithMoon> = ({ data, isSelected, onClick, onMo
   
   // Get the document body to change cursor style
   const { gl } = useThree();
+  
+  // Pass the orbitRef to the forwarded ref
+  useEffect(() => {
+    if (ref) {
+      // @ts-ignore - forwardRef typing issue
+      ref(orbitRef.current);
+    }
+  }, [ref]);
   
   // Handle cursor style changes
   useEffect(() => {
@@ -146,11 +163,11 @@ const Planet: React.FC<PlanetPropsWithMoon> = ({ data, isSelected, onClick, onMo
   useFrame((_, delta) => {
     // Orbit and rotation animations
     if (orbitRef.current) {
-      orbitRef.current.rotation.y += delta * orbitalSpeed;
+      orbitRef.current.rotation.y += delta * orbitalSpeed * orbitSpeedMultiplier;
     }
     
     if (planetRef.current) {
-      planetRef.current.rotation.y += delta * rotationSpeed;
+      planetRef.current.rotation.y += delta * rotationSpeed * orbitSpeedMultiplier;
     }
     
     // Pulse animation for selected planet
@@ -216,7 +233,13 @@ const Planet: React.FC<PlanetPropsWithMoon> = ({ data, isSelected, onClick, onMo
           </Sphere>
           
           {/* Add Moon for Earth */}
-          {id === 'earth' && <EarthMoon isEarthSelected={isSelected} onMoonClick={handleMoonClick} />}
+          {id === 'earth' && (
+            <EarthMoon 
+              isEarthSelected={isSelected} 
+              onMoonClick={handleMoonClick}
+              orbitSpeedMultiplier={orbitSpeedMultiplier} 
+            />
+          )}
           
           {/* Display rings for planets that have them */}
           {id === 'saturn' && (
@@ -296,6 +319,6 @@ const Planet: React.FC<PlanetPropsWithMoon> = ({ data, isSelected, onClick, onMo
       </group>
     </>
   );
-};
+});
 
 export default Planet; 

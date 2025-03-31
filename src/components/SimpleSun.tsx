@@ -2,19 +2,36 @@ import React, { useRef, useState, useEffect } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { Sphere, useTexture, Html } from '@react-three/drei';
 import * as THREE from 'three';
+import { OrbitSpeedMode } from '../types/types';
 
 interface SunProps {
   position: [number, number, number];
   isSelected: boolean;
   onClick: () => void;
+  orbitSpeedMultiplier: OrbitSpeedMode;
 }
 
-const SimpleSun: React.FC<SunProps> = ({ position, isSelected, onClick }) => {
+// Use forwardRef to pass refs to the component
+const SimpleSun = React.forwardRef<THREE.Group, SunProps>(({ 
+  position, 
+  isSelected, 
+  onClick,
+  orbitSpeedMultiplier
+}, ref) => {
   const sunRef = useRef<THREE.Mesh>(null);
+  const groupRef = useRef<THREE.Group>(null);
   const pulseRef = useRef<THREE.Mesh>(null);
   const [hovered, setHovered] = useState(false);
   const [pulseScale, setPulseScale] = useState(1);
   const { gl } = useThree();
+  
+  // Pass the groupRef to the forwarded ref
+  useEffect(() => {
+    if (ref) {
+      // @ts-ignore - forwardRef typing issue
+      ref(groupRef.current);
+    }
+  }, [ref]);
   
   // Handle cursor style changes
   useEffect(() => {
@@ -36,7 +53,7 @@ const SimpleSun: React.FC<SunProps> = ({ position, isSelected, onClick }) => {
   // Animate sun rotation and pulse effect
   useFrame((_, delta) => {
     if (sunRef.current) {
-      sunRef.current.rotation.y += delta * 0.005;
+      sunRef.current.rotation.y += delta * 0.005 * orbitSpeedMultiplier;
     }
     
     // Pulse animation for selected sun
@@ -49,7 +66,7 @@ const SimpleSun: React.FC<SunProps> = ({ position, isSelected, onClick }) => {
   });
   
   return (
-    <group position={position}>
+    <group position={position} ref={groupRef}>
       {/* Main sun sphere */}
       <Sphere 
         ref={sunRef} 
@@ -131,6 +148,6 @@ const SimpleSun: React.FC<SunProps> = ({ position, isSelected, onClick }) => {
       <pointLight intensity={4} distance={120} color="#FFF5F2" />
     </group>
   );
-};
+});
 
 export default SimpleSun; 

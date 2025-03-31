@@ -1,0 +1,227 @@
+.control-panel {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  width: 300px;
+  background-color: rgba(15, 20, 30, 0.9);
+  border: 1px solid rgba(0, 187, 255, 0.6);
+  border-radius: 10px;
+  color: #e1f5fe;
+  box-shadow: 0 0 20px rgba(0, 187, 255, 0.3);
+  backdrop-filter: blur(10px);
+  z-index: 1000;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+  font-family: 'Segoe UI', sans-serif;
+  display: flex;
+  flex-direction: column-reverse;
+}
+
+.control-panel-header {
+  background: linear-gradient(90deg, rgba(0, 70, 127, 0.6) 0%, rgba(0, 187, 255, 0.4) 100%);
+  padding: 15px;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 1px solid rgba(0, 187, 255, 0.3);
+  transition: all 0.3s ease;
+}
+
+.control-panel-header:hover {
+  background: linear-gradient(90deg, rgba(0, 80, 147, 0.7) 0%, rgba(0, 197, 255, 0.5) 100%);
+}
+
+.control-panel-header h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 500;
+  letter-spacing: 1.5px;
+  text-shadow: 0 0 10px rgba(0, 187, 255, 0.5);
+  color: #00d2ff;
+}
+
+/* Toggle icon styling */
+.toggle-icon {
+  width: 20px;
+  height: 16px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.toggle-bar {
+  display: block;
+  width: 100%;
+  height: 2px;
+  background-color: #00d2ff;
+  border-radius: 2px;
+  transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+  box-shadow: 0 0 5px rgba(0, 210, 255, 0.7);
+}
+
+/* Animate the toggle icon when expanded */
+.expanded .toggle-icon .toggle-bar:nth-child(1) {
+  transform: translateY(7px) rotate(45deg);
+}
+
+.expanded .toggle-icon .toggle-bar:nth-child(2) {
+  opacity: 0;
+  transform: scale(0);
+}
+
+.expanded .toggle-icon .toggle-bar:nth-child(3) {
+  transform: translateY(-7px) rotate(-45deg);
+}
+
+/* Main content styling */
+.control-panel-content {
+  padding: 18px;
+  max-height: 380px;
+  overflow-y: auto;
+  transform-origin: bottom center;
+  animation: slide-up 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+  background-color: rgba(16, 25, 40, 0.85);
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.control-section {
+  margin-bottom: 16px;
+}
+
+.control-section:last-child {
+  margin-bottom: 8px;
+}
+
+.control-section h4 {
+  margin: 0 0 10px 0;
+  font-size: 14px;
+  color: #00d2ff;
+  border-bottom: 1px solid rgba(0, 187, 255, 0.2);
+  padding-bottom: 6px;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+}
+
+.button-group {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.button-group button {
+  background-color: rgba(30, 40, 60, 0.7);
+  border: 1px solid rgba(0, 187, 255, 0.3);
+  color: #e1f5fe;
+  padding: 9px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 13px;
+  outline: none;
+  font-weight: 500;
+  letter-spacing: 0.3px;
+}
+
+.button-group button:hover {
+  background-color: rgba(0, 187, 255, 0.2);
+  border-color: rgba(0, 187, 255, 0.6);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.button-group button.active {
+  background-color: rgba(0, 210, 255, 0.25);
+  border-color: #29b6f6;
+  box-shadow: 0 0 12px rgba(41, 182, 246, 0.5);
+  color: white;
+  text-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+}
+
+/* Display a subtle pulse animation around active buttons */
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(41, 182, 246, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 5px rgba(41, 182, 246, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(41, 182, 246, 0);
+  }
+}
+
+.button-group button.active {
+  animation: pulse 2s infinite;
+}
+
+/* When collapsed, only show the header */
+.control-panel.collapsed .control-panel-content {
+  display: none;
+}
+
+.control-panel.expanded {
+  box-shadow: 0 0 30px rgba(0, 187, 255, 0.4);
+}
+
+/* Scrollbar styling */
+.control-panel-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.control-panel-content::-webkit-scrollbar-track {
+  background: rgba(0, 50, 80, 0.2);
+  border-radius: 6px;
+}
+
+.control-panel-content::-webkit-scrollbar-thumb {
+  background: rgba(0, 187, 255, 0.4);
+  border-radius: 6px;
+}
+
+.control-panel-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 210, 255, 0.6);
+}
+
+/* Make the control panel responsive */
+@media (max-width: 768px) {
+  .control-panel {
+    width: 250px;
+    right: 10px;
+    bottom: 10px;
+  }
+  
+  .control-panel-content {
+    max-height: 350px; /* Slightly smaller for medium screens */
+  }
+}
+
+@media (max-width: 480px) {
+  .control-panel {
+    width: calc(100% - 20px);
+    right: 10px;
+    left: 10px;
+    bottom: 10px;
+  }
+  
+  .control-panel-content {
+    max-height: 320px; /* Even smaller for mobile screens */
+  }
+  
+  /* Make buttons more compact on mobile */
+  .button-group button {
+    padding: 8px;
+    font-size: 12px;
+  }
+} 
