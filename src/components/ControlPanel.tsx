@@ -8,7 +8,7 @@ const ControlPanel: React.FC<ControlPanelProps> = ({ settings, onSettingsChange 
   const handleSpeedChange = (mode: OrbitSpeedMode) => {
     onSettingsChange({
       ...settings,
-      speedMode: mode
+      orbitSpeed: mode
     });
   };
 
@@ -36,20 +36,20 @@ const ControlPanel: React.FC<ControlPanelProps> = ({ settings, onSettingsChange 
             <h4>View Perspective</h4>
             <div className="button-group">
               <button 
-                className={settings.viewPerspective === ViewPerspective.FREE ? 'active' : ''}
-                onClick={() => handleViewChange(ViewPerspective.FREE)}
+                className={settings.viewPerspective === 'isometric' ? 'active' : ''}
+                onClick={() => handleViewChange('isometric')}
               >
                 Free View
               </button>
               <button 
-                className={settings.viewPerspective === ViewPerspective.TOP_DOWN ? 'active' : ''}
-                onClick={() => handleViewChange(ViewPerspective.TOP_DOWN)}
+                className={settings.viewPerspective === 'top' ? 'active' : ''}
+                onClick={() => handleViewChange('top')}
               >
                 Top-Down
               </button>
               <button 
-                className={settings.viewPerspective === ViewPerspective.SIDE_VIEW ? 'active' : ''}
-                onClick={() => handleViewChange(ViewPerspective.SIDE_VIEW)}
+                className={settings.viewPerspective === 'side' ? 'active' : ''}
+                onClick={() => handleViewChange('side')}
               >
                 Side View
               </button>
@@ -60,28 +60,22 @@ const ControlPanel: React.FC<ControlPanelProps> = ({ settings, onSettingsChange 
             <h4>Orbit Speed</h4>
             <div className="button-group">
               <button 
-                className={settings.speedMode === OrbitSpeedMode.PAUSED ? 'active' : ''}
-                onClick={() => handleSpeedChange(OrbitSpeedMode.PAUSED)}
+                className={settings.orbitSpeed === 'slow' ? 'active' : ''}
+                onClick={() => handleSpeedChange('slow')}
               >
-                Paused
+                Slow
               </button>
               <button 
-                className={settings.speedMode === OrbitSpeedMode.REALTIME ? 'active' : ''}
-                onClick={() => handleSpeedChange(OrbitSpeedMode.REALTIME)}
+                className={settings.orbitSpeed === 'normal' ? 'active' : ''}
+                onClick={() => handleSpeedChange('normal')}
               >
-                Real-time
+                Normal
               </button>
               <button 
-                className={settings.speedMode === OrbitSpeedMode.FAST ? 'active' : ''}
-                onClick={() => handleSpeedChange(OrbitSpeedMode.FAST)}
+                className={settings.orbitSpeed === 'fast' ? 'active' : ''}
+                onClick={() => handleSpeedChange('fast')}
               >
                 Fast
-              </button>
-              <button 
-                className={settings.speedMode === OrbitSpeedMode.VERY_FAST ? 'active' : ''}
-                onClick={() => handleSpeedChange(OrbitSpeedMode.VERY_FAST)}
-              >
-                Very Fast
               </button>
             </div>
           </div>
